@@ -2,19 +2,20 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
+	"log"
 
 	"github.com/t1ykf/t1y-sdk-go"
 )
 
-type Test struct {
+// 表结构
+type Student struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
-	Sex  int    `json:"sex"`
+	Sex  string `json:"sex"`
 }
 
-type APIResponse struct {
+// 响应
+type Response struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
@@ -22,38 +23,37 @@ type APIResponse struct {
 
 func main() {
 	// 初始化 SDK 配置
-	config := t1y.Init("http://dev.t1y.net/api", 1001, "", "")
+	client := t1y.Init("http://dev.t1y.net/api", 1001, "2c6118c4e02b40fe96f5c40ee1dc5561", "650bd657da0243b282d9cab6d75a80ff")
 
-	// 创建一条记录
-	response, err := config.CreateOne("test", &Test{})
-	if err != nil {
-		fmt.Println("Error:", err.Error())
-		//return
-	}
-
-	// 处理响应
-	apiResponse := &APIResponse{}
-	err = parseJSONResponse(response, apiResponse)
-	if err != nil {
-		fmt.Println("Error parsing JSON response:", err)
-		//return
-	}
-
-	fmt.Printf("Code: %d\n", apiResponse.Code)
-	fmt.Printf("Message: %s\n", apiResponse.Message)
-
-	// 打印 data 字段，你可以根据实际情况进一步处理 data 数据
-	if apiResponse.Data != nil {
-		dataBytes, _ := json.Marshal(apiResponse.Data)
-		fmt.Printf("Data: %s\n", string(dataBytes))
-	}
-}
-
-func parseJSONResponse(response *http.Response, target interface{}) error {
+	// 创建一条数据
+	response, err := client.CreateOne("student", &Student{Name: "王华", Age: 21, Sex: "男"})
+	// 删除一条数据
+	//response, err := client.DeleteOne("student", "653f1f797ed5bb441885c00d")
+	// 更新一条数据
+	//response, err := client.UpdateOne("student", "653f1f797ed5bb441885c00d", map[string]interface{}{"$set": &Student{Name: "王华华", Age: 22, Sex: "女"}})
+	// 查询一条数据
+	//response, err := client.ReadOne("student", "653f1f797ed5bb441885c00d")
+	// 查询全部数据（分页查询）
+	//response, err := client.ReadAll("student", 1, 10)
 	defer response.Body.Close()
-	if response.StatusCode >= 200 && response.StatusCode < 300 {
-		return json.NewDecoder(response.Body).Decode(target)
-	} else {
-		return fmt.Errorf("HTTP request failed. Status Code: %d", response.StatusCode)
+	if err != nil {
+		log.Printf("网络错误: %v", err)
+		return
 	}
+	apiResponse := &Response{}
+	if err := json.NewDecoder(response.Body).Decode(apiResponse); err != nil {
+		log.Printf("解析JSON数据失败: %v", err)
+		return
+	}
+	if apiResponse.Code != 200 {
+		log.Printf("Code: %d", apiResponse.Code)
+		log.Printf("Message: %s", apiResponse.Message)
+		log.Printf("创建失败")
+		return
+	}
+	log.Printf("Code: %d", apiResponse.Code)
+	log.Printf("Message: %s", apiResponse.Message)
+	dataBytes, _ := json.Marshal(apiResponse.Data)
+	log.Printf("Data: %s", string(dataBytes))
+	log.Printf("创建成功: %v", err)
 }
