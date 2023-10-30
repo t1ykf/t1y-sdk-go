@@ -1,15 +1,9 @@
 package t1y
 
 import (
+	"fmt"
 	"net/http"
 )
-
-type Config struct {
-	Domain    string
-	AppID     int
-	APIKey    string
-	SecretKey string
-}
 
 func Init(domain string, appID int, apiKey, secretKey string) *Config {
 	return &Config{
@@ -32,6 +26,10 @@ func (config *Config) UpdateOne(table, id string, data interface{}) (*http.Respo
 	return config.sendRequest("PUT", table+"/"+id, data)
 }
 
-func (config *Config) Read(table, id string) (*http.Response, error) {
+func (config *Config) ReadOne(table, id string) (*http.Response, error) {
 	return config.sendRequest("GET", table+"/"+id, nil)
+}
+
+func (config *Config) ReadAll(table string, page, size int) (*http.Response, error) {
+	return config.sendRequest("GET", fmt.Sprintf("%s?page=%d&size=%d", table, page, size), nil)
 }

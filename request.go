@@ -5,11 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
-func (sdk *Config) sendRequest(method, table string, data interface{}) (*http.Response, error) {
-	url := fmt.Sprintf("%s/v5/classes/%s", sdk.Domain, table)
+func (config *Config) sendRequest(method, table string, data interface{}) (*http.Response, error) {
+	index := strings.Index(table, "?page=")
+	_table := table
+	if index != -1 {
+		_table = table[:index]
+	}
+	url := fmt.Sprintf("%s/v5/classes/%s", config.Domain, table)
 
 	var jsonBytes []byte
 	if data != nil {
@@ -24,11 +30,11 @@ func (sdk *Config) sendRequest(method, table string, data interface{}) (*http.Re
 	req.Header.Add("Content-Type", "application/json")
 	nonceStr := UUID()
 	timestamp := time.Now().Unix()
-	req.Header.Add("X-T1Y-Application-ID", fmt.Sprintf("%d", sdk.AppID))
-	req.Header.Add("X-T1Y-Api-Key", sdk.APIKey)
+	req.Header.Add("X-T1Y-Application-ID", fmt.Sprintf("%d", config.AppID))
+	req.Header.Add("X-T1Y-Api-Key", config.APIKey)
 	req.Header.Add("X-T1Y-Safe-NonceStr", nonceStr)
 	req.Header.Add("X-T1Y-Safe-Timestamp", fmt.Sprintf("%d", timestamp))
-	req.Header.Add("X-T1Y-Safe-Sign", MD5(fmt.Sprintf("%s%d%s%s%d%s", url, sdk.AppID, sdk.APIKey, nonceStr, timestamp, sdk.SecretKey)))
+	req.Header.Add("X-T1Y-Safe-Sign", MD5(fmt.Sprintf("%s%d%s%s%d%s", fmt.Sprintf("/v5/classes/%s", _table), config.AppID, config.APIKey, nonceStr, timestamp, config.SecretKey)))
 
 	return client.Do(req)
 }
